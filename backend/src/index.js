@@ -18,7 +18,7 @@ import { createLabelService } from "./models/labelModel.js";
 dotenv.config();
 
 const app = express();
-const port = process.env.port || 3001;
+const port = process.env.PORT || 5001;
 
 //middleware
 app.use(express.json());
@@ -32,16 +32,24 @@ app.use("/api/labels", labelRoutes);
 //errorhandling middleware
 app.use(errorHandling);
 
-//create user table if not exists
-createUserTable();
-//create notes table if not exists
-createNotesTable();
-//create revoked tokens table if not exists
-createRevokedTokensTable();
-//create attachments table if not exists
-createAttachmentsTable();
-//create labels table if not exists
-createLabelsTable();
+// Initialize database tables in correct order
+(async () => {
+  try {
+    //create user table if not exists
+    await createUserTable();
+    //create notes table if not exists
+    await createNotesTable();
+    //create revoked tokens table if not exists
+    await createRevokedTokensTable();
+    //create attachments table if not exists
+    await createAttachmentsTable();
+    //create labels table if not exists
+    await createLabelsTable();
+    console.log("All database tables initialized successfully");
+  } catch (error) {
+    console.error("Error initializing database tables:", error);
+  }
+})();
 
 //testing postgres connnection
 app.get("/", async (req, res) => {

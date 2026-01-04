@@ -1,4 +1,6 @@
-# Git & GitHub Setup
+# Create repo at github.com/new
+git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
+git push -u origin main# Git & GitHub Setup
 
 ## 1. Initialize Git Repository
 
