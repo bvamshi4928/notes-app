@@ -1,5 +1,13 @@
 import pool from "../config/db.js";
 
+const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME;
+const AWS_REGION = process.env.AWS_REGION || "us-east-1";
+
+// Helper to convert S3 key to public URL
+const getS3PublicUrl = (s3Key) => {
+  return `https://${S3_BUCKET_NAME}.s3.${AWS_REGION}.amazonaws.com/${s3Key}`;
+};
+
 export const createAttachment = async (
   noteId,
   filename,
@@ -28,7 +36,11 @@ export const getAttachmentsByNote = async (noteId) => {
     `SELECT a.* FROM attachments a WHERE a.note_id = $1 ORDER BY created_at DESC`,
     [noteId]
   );
-  return result.rows;
+  // Add public S3 URL to each attachment
+  return result.rows.map((attachment) => ({
+    ...attachment,
+    s3_url: getS3PublicUrl(attachment.path),
+  }));
 };
 
 export const deleteAttachmentById = async (id) => {

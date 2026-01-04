@@ -188,11 +188,14 @@ const Label = ({ viewMode }) => {
                               .map((att) => (
                                 <div key={att.id} className="relative">
                                   <img
-                                    src={`${API_BASE_URL}/notes/attachments/${
-                                      att.id
-                                    }/preview?token=${localStorage.getItem(
-                                      "token"
-                                    )}`}
+                                    src={
+                                      att.s3_url ||
+                                      `${API_BASE_URL}/notes/attachments/${
+                                        att.id
+                                      }/preview?token=${localStorage.getItem(
+                                        "token"
+                                      )}`
+                                    }
                                     alt={att.original_name}
                                     className="w-full h-32 object-cover rounded"
                                   />
