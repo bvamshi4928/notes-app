@@ -21,28 +21,16 @@ import {
 } from "../controller/noteController.js";
 import { authenticate } from "../middleware/authMiddleware.js";
 import multer from "multer";
-import path from "path";
-import fs from "fs";
 
 const router = express.Router();
 
 router.use(authenticate);
 
-// ensure uploads directory exists
-const uploadsDir = path.resolve("src/uploads");
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsDir);
-  },
-  filename: function (req, file, cb) {
-    const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, unique + "-" + file.originalname);
-  },
+// Use memory storage for S3 uploads (no local disk storage)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
 });
-
-const upload = multer({ storage });
 
 router.post("/", upload.single("image"), createNote);
 router.get("/", getNotes);
