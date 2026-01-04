@@ -188,7 +188,7 @@ const Label = ({ viewMode }) => {
                               .map((att) => (
                                 <div key={att.id} className="relative">
                                   <img
-                                    src={`http://localhost:5001/api/notes/attachments/${
+                                    src={`${API_BASE_URL}/notes/attachments/${
                                       att.id
                                     }/preview?token=${localStorage.getItem(
                                       "token"
