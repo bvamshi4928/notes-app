@@ -1,6 +1,6 @@
-# Create repo at github.com/new
-git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
-git push -u origin main# Git & GitHub Setup
+# Git & GitHub Setup
+
+<!-- Last updated: January 4, 2026 - Testing CI/CD pipeline -->
 
 ## 1. Initialize Git Repository
 
