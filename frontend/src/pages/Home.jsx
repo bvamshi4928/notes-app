@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import api, { API_BASE_URL } from "../utils/api";
-import { MdLabel, MdPalette } from "react-icons/md";
+import {
+  MdLabel,
+  MdPalette,
+  MdPushPin,
+  MdArchive,
+  MdDelete,
+  MdImage,
+} from "react-icons/md";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import "../quill-custom.css";
@@ -500,15 +507,23 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
                 note.color || "default"
               )}`}
             >
-              <div className="flex items-start justify-between gap-2">
+              {/* Pin Icon - Top Right */}
+              <button
+                onClick={() => handlePin(note.id)}
+                className={`absolute top-2 right-2 btn btn-ghost btn-sm btn-circle ${
+                  note.is_pinned
+                    ? "text-primary"
+                    : "text-gray-400 hover:text-gray-600"
+                }`}
+                title={note.is_pinned ? "Unpin" : "Pin"}
+              >
+                <MdPushPin className="h-5 w-5" />
+              </button>
+
+              <div className="flex items-start justify-between gap-2 pr-8">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h2 className="font-semibold text-lg">{note.title}</h2>
-                    {note.is_pinned && (
-                      <span className="badge badge-sm badge-primary">
-                        Pinned
-                      </span>
-                    )}
                   </div>
                   {note.note_date && (
                     <p className="text-xs text-gray-500">
@@ -520,7 +535,7 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
                   </p>
                 </div>
 
-                {/* Action buttons */}
+                {/* More Options Menu */}
                 <div className="dropdown dropdown-end">
                   <button
                     tabIndex={0}
@@ -547,11 +562,6 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
                   >
                     <li>
                       <button onClick={() => openEditModal(note)}>Edit</button>
-                    </li>
-                    <li>
-                      <button onClick={() => handlePin(note.id)}>
-                        {note.is_pinned ? "Unpin" : "Pin"}
-                      </button>
                     </li>
                     <li>
                       <button
@@ -604,43 +614,58 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
                 <div className="space-y-2">
                   {note.attachments.some((att) =>
                     att.mime_type?.startsWith("image/")
-                  ) && (
-                    <div className="grid grid-cols-2 gap-2">
-                      {note.attachments
-                        .filter((att) => att.mime_type?.startsWith("image/"))
-                        .map((att) => (
-                          <div key={att.id} className="relative group">
-                            <img
-                              src={
-                                att.s3_url ||
-                                `${API_BASE_URL}/notes/attachments/${
-                                  att.id
-                                }/preview?token=${localStorage.getItem(
-                                  "token"
-                                )}`
-                              }
-                              alt={att.original_name}
-                              className="w-full h-32 object-cover rounded cursor-pointer hover:opacity-90 transition-opacity"
-                              onClick={() => handleDownload(att)}
-                              onError={(e) => {
-                                console.error("Failed to load image:", att);
-                                e.target.style.display = "none";
-                                e.target.nextSibling.style.display = "flex";
-                              }}
-                            />
-                            <div
-                              style={{ display: "none" }}
-                              className="w-full h-32 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500"
-                            >
-                              Image failed to load
+                  ) &&
+                    (() => {
+                      const images = note.attachments.filter((att) =>
+                        att.mime_type?.startsWith("image/")
+                      );
+                      const imageCount = images.length;
+                      return (
+                        <div
+                          className={
+                            imageCount === 1
+                              ? "w-full"
+                              : "grid grid-cols-2 gap-2"
+                          }
+                        >
+                          {images.map((att) => (
+                            <div key={att.id} className="relative group">
+                              <img
+                                src={
+                                  att.s3_url ||
+                                  `${API_BASE_URL}/notes/attachments/${
+                                    att.id
+                                  }/preview?token=${localStorage.getItem(
+                                    "token"
+                                  )}`
+                                }
+                                alt={att.original_name}
+                                className={`w-full object-cover rounded cursor-pointer hover:opacity-90 transition-opacity ${
+                                  imageCount === 1 ? "h-48" : "h-24"
+                                }`}
+                                onClick={() => handleDownload(att)}
+                                onError={(e) => {
+                                  console.error("Failed to load image:", att);
+                                  e.target.style.display = "none";
+                                  e.target.nextSibling.style.display = "flex";
+                                }}
+                              />
+                              <div
+                                style={{ display: "none" }}
+                                className={`w-full bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500 ${
+                                  imageCount === 1 ? "h-48" : "h-24"
+                                }`}
+                              >
+                                Image failed to load
+                              </div>
+                              <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b opacity-0 group-hover:opacity-100 transition-opacity truncate">
+                                {att.original_name || att.filename}
+                              </div>
                             </div>
-                            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b opacity-0 group-hover:opacity-100 transition-opacity truncate">
-                              {att.original_name || att.filename}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  )}
+                          ))}
+                        </div>
+                      );
+                    })()}
                   {note.attachments.some(
                     (att) => !att.mime_type?.startsWith("image/")
                   ) && (
@@ -665,6 +690,31 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
                   )}
                 </div>
               )}
+
+              {/* Quick Action Icons at Bottom */}
+              <div className="flex items-center justify-start gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => openEditModal(note)}
+                  className="btn btn-ghost btn-sm btn-circle"
+                  title="Add Image"
+                >
+                  <MdImage className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => handleArchive(note.id)}
+                  className="btn btn-ghost btn-sm btn-circle"
+                  title="Archive"
+                >
+                  <MdArchive className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => handleDelete(note.id)}
+                  className="btn btn-ghost btn-sm btn-circle text-error hover:bg-error hover:text-white"
+                  title="Delete"
+                >
+                  <MdDelete className="h-5 w-5" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -709,182 +759,227 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
       )}
 
       {/* Edit Note Modal */}
-      {showEditModal && editingNote && (
-        <div className="modal modal-open">
-          <div className="modal-box max-w-2xl">
-            <h3 className="font-bold text-lg mb-4">Edit Note</h3>
-            <form onSubmit={handleUpdate} className="space-y-3">
-              <input
-                type="text"
-                className="input input-bordered w-full"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                placeholder="Title"
-                required
-              />
-              <ReactQuill
-                theme="snow"
-                value={editBody}
-                onChange={setEditBody}
-                placeholder="Note content..."
-                className="bg-base-100"
-                modules={{
-                  toolbar: [
-                    ["bold", "italic", "underline", "strike"],
-                    [{ list: "ordered" }, { list: "bullet" }],
-                    ["link"],
-                    ["clean"],
-                  ],
-                }}
-              />
-              <div className="flex flex-wrap gap-2">
-                {COLORS.map((c) => (
-                  <button
-                    key={c.value}
-                    type="button"
-                    onClick={() => setEditColor(c.value)}
-                    className={`w-8 h-8 rounded-full border-2 ${
-                      editColor === c.value
-                        ? "border-primary"
-                        : "border-gray-300"
-                    } ${c.bg}`}
-                    title={c.name}
+      {showEditModal &&
+        editingNote &&
+        (() => {
+          const currentImageCount =
+            editingNote?.attachments?.filter((att) =>
+              att.mime_type?.startsWith("image/")
+            ).length || 0;
+          const MAX_IMAGES = 5;
+          const canAddMore = currentImageCount < MAX_IMAGES;
+
+          return (
+            <div className="modal modal-open">
+              <div className="modal-box max-w-2xl">
+                <h3 className="font-bold text-lg mb-4">
+                  Edit Note
+                  {currentImageCount > 0 && (
+                    <span className="ml-2 text-sm font-normal text-gray-500">
+                      ({currentImageCount}/{MAX_IMAGES} images)
+                    </span>
+                  )}
+                </h3>
+                <form onSubmit={handleUpdate} className="space-y-3">
+                  <input
+                    type="text"
+                    className="input input-bordered w-full"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="Title"
+                    required
                   />
-                ))}
-              </div>
-              <div className="flex flex-col md:flex-row gap-3">
-                <input
-                  type="date"
-                  className="input input-bordered flex-1"
-                  value={editNoteDate}
-                  onChange={(e) => setEditNoteDate(e.target.value)}
-                  placeholder="Date (optional)"
-                />
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="file-input file-input-bordered flex-1"
-                  onChange={(e) =>
-                    setEditImageFile(e.target.files?.[0] || null)
-                  }
-                />
-              </div>
-              {editImageFile && (
-                <div className="relative">
-                  <img
-                    src={URL.createObjectURL(editImageFile)}
-                    alt="Preview"
-                    className="w-full max-h-48 object-contain rounded border"
+                  <ReactQuill
+                    theme="snow"
+                    value={editBody}
+                    onChange={setEditBody}
+                    placeholder="Note content..."
+                    className="bg-base-100"
+                    modules={{
+                      toolbar: [
+                        ["bold", "italic", "underline", "strike"],
+                        [{ list: "ordered" }, { list: "bullet" }],
+                        ["link"],
+                        ["clean"],
+                      ],
+                    }}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setEditImageFile(null)}
-                    className="absolute top-2 right-2 btn btn-circle btn-sm btn-error"
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
-              {editingNote?.attachments &&
-                editingNote.attachments.some((att) =>
-                  att.mime_type?.startsWith("image/")
-                ) && (
-                  <div>
-                    <p className="text-xs font-semibold mb-2">Current Images</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {editingNote.attachments
-                        .filter((att) => att.mime_type?.startsWith("image/"))
-                        .map((att) => (
-                          <div key={att.id} className="relative group">
-                            <img
-                              src={
-                                att.s3_url ||
-                                `${API_BASE_URL}/notes/attachments/${
-                                  att.id
-                                }/preview?token=${localStorage.getItem(
-                                  "token"
-                                )}`
-                              }
-                              alt={att.original_name}
-                              className="w-full h-32 object-cover rounded"
-                              onError={(e) => {
-                                console.error(
-                                  "Failed to load image in modal:",
-                                  att
-                                );
-                                e.target.style.border = "2px solid red";
-                                e.target.alt = "Image not available";
-                              }}
-                            />
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                if (window.confirm("Delete this image?")) {
-                                  try {
-                                    await api.delete(
-                                      `/notes/attachments/${att.id}`
-                                    );
-                                    setEditingNote({
-                                      ...editingNote,
-                                      attachments:
-                                        editingNote.attachments.filter(
-                                          (a) => a.id !== att.id
-                                        ),
-                                    });
-                                  } catch (err) {
-                                    console.error(
-                                      "Failed to delete image:",
-                                      err
-                                    );
-                                    alert("Failed to delete image");
-                                  }
-                                }
-                              }}
-                              className="absolute top-1 right-1 btn btn-circle btn-xs btn-error opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              ×
-                            </button>
-                            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b truncate">
-                              {att.original_name || att.filename}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
+                  <div className="flex flex-wrap gap-2">
+                    {COLORS.map((c) => (
+                      <button
+                        key={c.value}
+                        type="button"
+                        onClick={() => setEditColor(c.value)}
+                        className={`w-8 h-8 rounded-full border-2 ${
+                          editColor === c.value
+                            ? "border-primary"
+                            : "border-gray-300"
+                        } ${c.bg}`}
+                        title={c.name}
+                      />
+                    ))}
                   </div>
-                )}
-              <div className="modal-action">
-                <button
-                  type="button"
-                  onClick={() => {
+                  <div className="flex flex-col md:flex-row gap-3">
+                    <input
+                      type="date"
+                      className="input input-bordered flex-1"
+                      value={editNoteDate}
+                      onChange={(e) => setEditNoteDate(e.target.value)}
+                      placeholder="Date (optional)"
+                    />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="file-input file-input-bordered flex-1"
+                      onChange={(e) =>
+                        setEditImageFile(e.target.files?.[0] || null)
+                      }
+                      disabled={!canAddMore}
+                      title={
+                        !canAddMore
+                          ? `Maximum ${MAX_IMAGES} images allowed`
+                          : ""
+                      }
+                    />
+                  </div>
+                  {!canAddMore && (
+                    <div className="alert alert-warning text-sm py-2">
+                      Maximum {MAX_IMAGES} images reached. Delete an image to
+                      add more.
+                    </div>
+                  )}
+                  {editImageFile && (
+                    <div className="relative">
+                      <img
+                        src={URL.createObjectURL(editImageFile)}
+                        alt="Preview"
+                        className="w-full max-h-48 object-contain rounded border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setEditImageFile(null)}
+                        className="absolute top-2 right-2 btn btn-circle btn-sm btn-error"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+                  {editingNote?.attachments &&
+                    editingNote.attachments.some((att) =>
+                      att.mime_type?.startsWith("image/")
+                    ) &&
+                    (() => {
+                      const images = editingNote.attachments.filter((att) =>
+                        att.mime_type?.startsWith("image/")
+                      );
+                      const imageCount = images.length;
+                      return (
+                        <div>
+                          <p className="text-xs font-semibold mb-2">
+                            Current Images ({imageCount})
+                          </p>
+                          <div
+                            className={
+                              imageCount === 1
+                                ? "w-full"
+                                : "grid grid-cols-2 gap-2"
+                            }
+                          >
+                            {images.map((att) => (
+                              <div key={att.id} className="relative group">
+                                <img
+                                  src={
+                                    att.s3_url ||
+                                    `${API_BASE_URL}/notes/attachments/${
+                                      att.id
+                                    }/preview?token=${localStorage.getItem(
+                                      "token"
+                                    )}`
+                                  }
+                                  alt={att.original_name}
+                                  className={`w-full object-cover rounded ${
+                                    imageCount === 1 ? "h-48" : "h-24"
+                                  }`}
+                                  onError={(e) => {
+                                    console.error(
+                                      "Failed to load image in modal:",
+                                      att
+                                    );
+                                    e.target.style.border = "2px solid red";
+                                    e.target.alt = "Image not available";
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (window.confirm("Delete this image?")) {
+                                      try {
+                                        await api.delete(
+                                          `/notes/attachments/${att.id}`
+                                        );
+                                        setEditingNote({
+                                          ...editingNote,
+                                          attachments:
+                                            editingNote.attachments.filter(
+                                              (a) => a.id !== att.id
+                                            ),
+                                        });
+                                      } catch (err) {
+                                        console.error(
+                                          "Failed to delete image:",
+                                          err
+                                        );
+                                        alert("Failed to delete image");
+                                      }
+                                    }
+                                  }}
+                                  className="absolute top-1 right-1 btn btn-circle btn-xs btn-error opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  ×
+                                </button>
+                                <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b truncate">
+                                  {att.original_name || att.filename}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  <div className="modal-action">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowEditModal(false);
+                        setEditingNote(null);
+                      }}
+                      className="btn btn-ghost"
+                      disabled={updating}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={updating}
+                    >
+                      {updating ? "Updating..." : "Update Note"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+              <div
+                className="modal-backdrop"
+                onClick={() => {
+                  if (!updating) {
                     setShowEditModal(false);
                     setEditingNote(null);
-                  }}
-                  className="btn btn-ghost"
-                  disabled={updating}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={updating}
-                >
-                  {updating ? "Updating..." : "Update Note"}
-                </button>
-              </div>
-            </form>
-          </div>
-          <div
-            className="modal-backdrop"
-            onClick={() => {
-              if (!updating) {
-                setShowEditModal(false);
-                setEditingNote(null);
-              }
-            }}
-          />
-        </div>
-      )}
+                  }
+                }}
+              />
+            </div>
+          );
+        })()}
 
       {/* Toast Notifications */}
       {toast && (
