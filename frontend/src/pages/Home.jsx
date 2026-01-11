@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import api, { API_BASE_URL } from "../utils/api";
 import {
   MdLabel,
@@ -7,6 +7,7 @@ import {
   MdArchive,
   MdDelete,
   MdImage,
+  MdContentCopy,
 } from "react-icons/md";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
@@ -66,6 +67,8 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
   const [labels, setLabels] = useState([]);
   const [showLabelModal, setShowLabelModal] = useState(false);
   const [selectedNoteId, setSelectedNoteId] = useState(null);
+
+  const fileInputRef = useRef(null);
 
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -213,6 +216,23 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
     }
   };
 
+  const handleCopyNote = (note) => {
+    // Strip HTML tags from body for plain text copy
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = note.body;
+    const plainText = tempDiv.textContent || tempDiv.innerText || "";
+
+    navigator.clipboard.writeText(plainText).then(
+      () => {
+        showToast("Note content copied to clipboard!");
+      },
+      (err) => {
+        showToast("Failed to copy note", "error");
+        console.error("Copy failed:", err);
+      }
+    );
+  };
+
   const handleDownload = async (attachment) => {
     try {
       const res = await api.get(`/notes/attachments/${attachment.id}`, {
@@ -296,11 +316,15 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
+      // Clear all form fields
       setTitle("");
       setBody("");
       setNoteDate("");
       setImageFile(null);
       setColor("default");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
       setFormExpanded(false);
       showToast("Note created successfully!");
       onRefresh?.();
@@ -415,6 +439,7 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
             <input
               type="file"
               accept="image/*"
+              ref={fileInputRef}
               className="file-input file-input-bordered flex-1"
               onChange={(e) => setImageFile(e.target.files?.[0] || null)}
             />
@@ -693,6 +718,13 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
 
               {/* Quick Action Icons at Bottom */}
               <div className="flex items-center justify-start gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => handleCopyNote(note)}
+                  className="btn btn-ghost btn-sm btn-circle"
+                  title="Copy Note"
+                >
+                  <MdContentCopy className="h-5 w-5" />
+                </button>
                 <button
                   onClick={() => openEditModal(note)}
                   className="btn btn-ghost btn-sm btn-circle"
