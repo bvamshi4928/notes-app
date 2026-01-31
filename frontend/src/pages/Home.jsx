@@ -14,52 +14,6 @@ import "react-quill/dist/quill.snow.css";
 import "../quill-custom.css";
 import Toast from "../components/Toast";
 
-const getRelativeTime = (dateString) => {
-  if (!dateString) return "";
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return "";
-
-  const now = new Date();
-  const diffMs = now - date;
-  const diffSecs = Math.floor(diffMs / 1000);
-  const diffMins = Math.floor(diffSecs / 60);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffSecs < 60) return "Just now";
-  if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? "s" : ""} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
-  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
-  return date.toLocaleDateString();
-};
-
-const COLORS = [
-  { name: "Default", value: "default", bg: "bg-base-100" },
-  { name: "Red", value: "red", bg: "bg-red-100" },
-  { name: "Orange", value: "orange", bg: "bg-orange-100" },
-  { name: "Yellow", value: "yellow", bg: "bg-yellow-100" },
-  { name: "Green", value: "green", bg: "bg-green-100" },
-  { name: "Blue", value: "blue", bg: "bg-blue-100" },
-  { name: "Purple", value: "purple", bg: "bg-purple-100" },
-  { name: "Pink", value: "pink", bg: "bg-pink-100" },
-  { name: "Gray", value: "gray", bg: "bg-gray-100" },
-];
-
-const getColorClass = (color) => {
-  const colorMap = {
-    default: "bg-base-100",
-    red: "bg-red-50 dark:bg-red-950",
-    orange: "bg-orange-50 dark:bg-orange-950",
-    yellow: "bg-yellow-50 dark:bg-yellow-950",
-    green: "bg-green-50 dark:bg-green-950",
-    blue: "bg-blue-50 dark:bg-blue-950",
-    purple: "bg-purple-50 dark:bg-purple-950",
-    pink: "bg-pink-50 dark:bg-pink-950",
-    gray: "bg-gray-100 dark:bg-gray-800",
-  };
-  return colorMap[color] || colorMap.default;
-};
-
 const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -116,7 +70,7 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
     } catch (err) {
       showToast(
         err.response?.data?.message || err.message || "Failed to add label",
-        "error"
+        "error",
       );
     }
   };
@@ -129,7 +83,7 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
     } catch (err) {
       showToast(
         err.response?.data?.message || err.message || "Failed to remove label",
-        "error"
+        "error",
       );
     }
   };
@@ -169,7 +123,7 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
     } catch (err) {
       showToast(
         err.response?.data?.message || err.message || "Failed to update note",
-        "error"
+        "error",
       );
     } finally {
       setUpdating(false);
@@ -184,7 +138,7 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
     } catch (err) {
       showToast(
         err.response?.data?.message || err.message || "Failed to pin note",
-        "error"
+        "error",
       );
     }
   };
@@ -197,7 +151,7 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
     } catch (err) {
       showToast(
         err.response?.data?.message || err.message || "Failed to archive note",
-        "error"
+        "error",
       );
     }
   };
@@ -211,7 +165,7 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
     } catch (err) {
       showToast(
         err.response?.data?.message || err.message || "Failed to delete note",
-        "error"
+        "error",
       );
     }
   };
@@ -229,7 +183,7 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
       (err) => {
         showToast("Failed to copy note", "error");
         console.error("Copy failed:", err);
-      }
+      },
     );
   };
 
@@ -262,7 +216,7 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
       setNotes(res.data?.data || []);
     } catch (err) {
       setError(
-        err.response?.data?.message || err.message || "Failed to load notes"
+        err.response?.data?.message || err.message || "Failed to load notes",
       );
     } finally {
       setLoading(false);
@@ -282,11 +236,11 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
         return sorted.sort((a, b) => a.title.localeCompare(b.title));
       case "created":
         return sorted.sort(
-          (a, b) => new Date(b.created_at) - new Date(a.created_at)
+          (a, b) => new Date(b.created_at) - new Date(a.created_at),
         );
       case "modified":
         return sorted.sort(
-          (a, b) => new Date(b.updated_at) - new Date(a.updated_at)
+          (a, b) => new Date(b.updated_at) - new Date(a.updated_at),
         );
       default:
         return sorted;
@@ -331,11 +285,30 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
     } catch (err) {
       showToast(
         err.response?.data?.message || err.message || "Failed to create note",
-        "error"
+        "error",
       );
     } finally {
       setCreating(false);
     }
+  };
+
+  const getRelativeTime = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "";
+    const now = new Date();
+    const diffMs = now - date;
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffSecs < 60) return "Just now";
+    if (diffMins < 60)
+      return `${diffMins} minute${diffMins > 1 ? "s" : ""} ago`;
+    if (diffHours < 24)
+      return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+    return date.toLocaleDateString();
   };
 
   return (
@@ -529,7 +502,7 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
             <div
               key={note.id}
               className={`card shadow p-4 space-y-2 relative ${getColorClass(
-                note.color || "default"
+                note.color || "default",
               )}`}
             >
               {/* Pin Icon - Top Right */}
@@ -638,11 +611,11 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
               {note.attachments && note.attachments.length > 0 && (
                 <div className="space-y-2">
                   {note.attachments.some((att) =>
-                    att.mime_type?.startsWith("image/")
+                    att.mime_type?.startsWith("image/"),
                   ) &&
                     (() => {
                       const images = note.attachments.filter((att) =>
-                        att.mime_type?.startsWith("image/")
+                        att.mime_type?.startsWith("image/"),
                       );
                       const imageCount = images.length;
                       return (
@@ -661,7 +634,7 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
                                   `${API_BASE_URL}/notes/attachments/${
                                     att.id
                                   }/preview?token=${localStorage.getItem(
-                                    "token"
+                                    "token",
                                   )}`
                                 }
                                 alt={att.original_name}
@@ -692,7 +665,7 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
                       );
                     })()}
                   {note.attachments.some(
-                    (att) => !att.mime_type?.startsWith("image/")
+                    (att) => !att.mime_type?.startsWith("image/"),
                   ) && (
                     <div>
                       <p className="text-xs font-semibold">Other Attachments</p>
@@ -796,7 +769,7 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
         (() => {
           const currentImageCount =
             editingNote?.attachments?.filter((att) =>
-              att.mime_type?.startsWith("image/")
+              att.mime_type?.startsWith("image/"),
             ).length || 0;
           const MAX_IMAGES = 5;
           const canAddMore = currentImageCount < MAX_IMAGES;
@@ -898,11 +871,11 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
                   )}
                   {editingNote?.attachments &&
                     editingNote.attachments.some((att) =>
-                      att.mime_type?.startsWith("image/")
+                      att.mime_type?.startsWith("image/"),
                     ) &&
                     (() => {
                       const images = editingNote.attachments.filter((att) =>
-                        att.mime_type?.startsWith("image/")
+                        att.mime_type?.startsWith("image/"),
                       );
                       const imageCount = images.length;
                       return (
@@ -925,7 +898,7 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
                                     `${API_BASE_URL}/notes/attachments/${
                                       att.id
                                     }/preview?token=${localStorage.getItem(
-                                      "token"
+                                      "token",
                                     )}`
                                   }
                                   alt={att.original_name}
@@ -935,7 +908,7 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
                                   onError={(e) => {
                                     console.error(
                                       "Failed to load image in modal:",
-                                      att
+                                      att,
                                     );
                                     e.target.style.border = "2px solid red";
                                     e.target.alt = "Image not available";
@@ -947,19 +920,19 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
                                     if (window.confirm("Delete this image?")) {
                                       try {
                                         await api.delete(
-                                          `/notes/attachments/${att.id}`
+                                          `/notes/attachments/${att.id}`,
                                         );
                                         setEditingNote({
                                           ...editingNote,
                                           attachments:
                                             editingNote.attachments.filter(
-                                              (a) => a.id !== att.id
+                                              (a) => a.id !== att.id,
                                             ),
                                         });
                                       } catch (err) {
                                         console.error(
                                           "Failed to delete image:",
-                                          err
+                                          err,
                                         );
                                         alert("Failed to delete image");
                                       }
@@ -1026,3 +999,20 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
 };
 
 export default Home;
+
+const COLORS = [
+  { name: "Default", value: "default", bg: "bg-base-100" },
+  { name: "Red", value: "red", bg: "bg-red-100" },
+  { name: "Orange", value: "orange", bg: "bg-orange-100" },
+  { name: "Yellow", value: "yellow", bg: "bg-yellow-100" },
+  { name: "Green", value: "green", bg: "bg-green-100" },
+  { name: "Blue", value: "blue", bg: "bg-blue-100" },
+  { name: "Purple", value: "purple", bg: "bg-purple-100" },
+  { name: "Pink", value: "pink", bg: "bg-pink-100" },
+  { name: "Gray", value: "gray", bg: "bg-gray-100" },
+];
+
+const getColorClass = (color) => {
+  const colorObj = COLORS.find((c) => c.value === color);
+  return colorObj ? colorObj.bg : "bg-base-100";
+};

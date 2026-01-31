@@ -75,7 +75,7 @@ export const addLabelToNote = async (req, res, next) => {
     // verify note ownership
     const noteCheck = await pool.query(
       "SELECT user_id FROM notes WHERE id=$1",
-      [noteId]
+      [noteId],
     );
     if (!noteCheck.rows[0]) return handleResponse(res, 404, "Note not found");
     if (noteCheck.rows[0].user_id !== userId)
@@ -84,7 +84,7 @@ export const addLabelToNote = async (req, res, next) => {
     // verify label ownership
     const labelCheck = await pool.query(
       "SELECT user_id FROM labels WHERE id=$1",
-      [labelId]
+      [labelId],
     );
     if (!labelCheck.rows[0]) return handleResponse(res, 404, "Label not found");
     if (labelCheck.rows[0].user_id !== userId)
@@ -105,7 +105,7 @@ export const removeLabelFromNote = async (req, res, next) => {
     // verify note ownership
     const noteCheck = await pool.query(
       "SELECT user_id FROM notes WHERE id=$1",
-      [noteId]
+      [noteId],
     );
     if (!noteCheck.rows[0]) return handleResponse(res, 404, "Note not found");
     if (noteCheck.rows[0].user_id !== userId)
@@ -123,7 +123,16 @@ export const getNotesByLabel = async (req, res, next) => {
     const userId = req.user.id;
     const { id } = req.params;
     const notes = await getNotesByLabelService(userId, id);
-    handleResponse(res, 200, "Notes retrieved", notes);
+    // Attach attachments to each note
+    const { getAttachmentsByNote } =
+      await import("../models/attachmentModel.js");
+    const notesWithAttachments = await Promise.all(
+      notes.map(async (note) => ({
+        ...note,
+        attachments: await getAttachmentsByNote(note.id),
+      })),
+    );
+    handleResponse(res, 200, "Notes retrieved", notesWithAttachments);
   } catch (err) {
     next(err);
   }

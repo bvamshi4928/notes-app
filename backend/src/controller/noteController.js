@@ -20,7 +20,7 @@ import {
   deleteAttachmentById,
   getAttachmentsByNote,
 } from "../models/attachmentModel.js";
-import { uploadToS3, getSignedUrlFromS3, deleteFromS3 } from "../config/aws.js";
+import path from "path";
 import pool from "../config/db.js";
 
 const handleResponse = (res, status, message, data = null) => {
@@ -32,7 +32,7 @@ const attachAttachments = async (notes) => {
     notes.map(async (n) => ({
       ...n,
       attachments: await getAttachmentsByNote(n.id),
-    }))
+    })),
   );
 };
 
@@ -49,23 +49,22 @@ export const createNote = async (req, res, next) => {
       title,
       body,
       note_date || new Date(),
-      color || "default"
+      color || "default",
     );
 
-    // if an image was uploaded in the same request (field name 'image'), save to S3
+    // if an image was uploaded in the same request (field name 'image'), save locally
     let savedAttachment = null;
     if (req.file) {
-      const s3Key = `notes/${userId}/${note.id}/${Date.now()}-${
-        req.file.originalname
-      }`;
-      await uploadToS3(req.file, s3Key);
+      // Store path relative to backend/src/uploads
+      const uploadsDir = path.join(process.cwd(), "backend", "src", "uploads");
+      const relPath = path.relative(uploadsDir, req.file.path);
       savedAttachment = await createAttachment(
         note.id,
-        s3Key,
+        req.file.filename,
         req.file.originalname,
         req.file.mimetype,
         req.file.size,
-        s3Key // store S3 key as path
+        relPath, // store path relative to uploads dir
       );
     }
 
@@ -144,25 +143,23 @@ export const updateNote = async (req, res, next) => {
       title,
       body,
       note_date || null,
-      color || "default"
+      color || "default",
     );
     if (!updated)
       return handleResponse(res, 404, "Note not found or not allowed");
 
-    // if an image was uploaded during update, save to S3
+    // if an image was uploaded during update, save locally
     let savedAttachment = null;
     if (req.file) {
-      const s3Key = `notes/${userId}/${updated.id}/${Date.now()}-${
-        req.file.originalname
-      }`;
-      await uploadToS3(req.file, s3Key);
+      const uploadsDir = path.join(process.cwd(), "backend", "src", "uploads");
+      const relPath = path.relative(uploadsDir, req.file.path);
       savedAttachment = await createAttachment(
         updated.id,
-        s3Key,
+        req.file.filename,
         req.file.originalname,
         req.file.mimetype,
         req.file.size,
-        s3Key // store S3 key as path
+        relPath,
       );
     }
 
@@ -253,13 +250,16 @@ export const permanentDeleteNote = async (req, res, next) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
-    // remove attachment files from S3
+    // remove attachment files from local storage
     const attachments = await getAttachmentsByNote(id);
     for (const a of attachments) {
       try {
-        await deleteFromS3(a.path); // path contains S3 key
+        const filePath = path.join(process.cwd(), a.path);
+        await import("fs").then((fs) =>
+          fs.promises.unlink(filePath).catch(() => {}),
+        );
       } catch (e) {
-        console.error("Error deleting from S3", a.path, e);
+        console.error("Error deleting local file", a.path, e);
       }
     }
 
@@ -278,7 +278,7 @@ export const uploadAttachments = async (req, res, next) => {
     // verify note ownership
     const noteCheck = await pool.query(
       "SELECT user_id FROM notes WHERE id=$1",
-      [noteId]
+      [noteId],
     );
     if (!noteCheck.rows[0]) return handleResponse(res, 404, "Note not found");
     if (noteCheck.rows[0].user_id !== userId)
@@ -289,19 +289,15 @@ export const uploadAttachments = async (req, res, next) => {
 
     const saved = [];
     for (const file of req.files) {
-      // upload to S3
-      const s3Key = `notes/${userId}/${noteId}/${Date.now()}-${
-        file.originalname
-      }`;
-      await uploadToS3(file, s3Key);
-      // create DB record
+      const uploadsDir = path.join(process.cwd(), "backend", "src", "uploads");
+      const relPath = path.relative(uploadsDir, file.path);
       const record = await createAttachment(
         noteId,
-        s3Key,
+        file.filename,
         file.originalname,
         file.mimetype,
         file.size,
-        s3Key // store S3 key as path
+        relPath,
       );
       saved.push(record);
     }
@@ -318,7 +314,7 @@ export const listAttachmentsForNote = async (req, res, next) => {
     // verify ownership
     const noteCheck = await pool.query(
       "SELECT user_id FROM notes WHERE id=$1",
-      [noteId]
+      [noteId],
     );
     if (!noteCheck.rows[0]) return handleResponse(res, 404, "Note not found");
     if (noteCheck.rows[0].user_id !== userId)
@@ -340,11 +336,10 @@ export const downloadAttachment = async (req, res, next) => {
     if (attachment.user_id !== userId)
       return handleResponse(res, 403, "Not authorized");
 
-    // Generate signed URL from S3 (expires in 1 hour)
-    const signedUrl = await getSignedUrlFromS3(attachment.path, 3600);
-
-    // Redirect to S3 signed URL
-    res.redirect(signedUrl);
+    // Serve file directly from local storage
+    const uploadsDir = path.join(process.cwd(), "backend", "src", "uploads");
+    const filePath = path.join(uploadsDir, attachment.path);
+    res.sendFile(filePath);
   } catch (err) {
     next(err);
   }
@@ -359,11 +354,10 @@ export const previewAttachment = async (req, res, next) => {
     if (attachment.user_id !== userId)
       return handleResponse(res, 403, "Not authorized");
 
-    // Generate signed URL from S3 (expires in 1 hour)
-    const signedUrl = await getSignedUrlFromS3(attachment.path, 3600);
-
-    // Redirect to S3 signed URL
-    res.redirect(signedUrl);
+    // Serve file directly from local storage
+    const uploadsDir = path.join(process.cwd(), "backend", "src", "uploads");
+    const filePath = path.join(uploadsDir, attachment.path);
+    res.sendFile(filePath);
   } catch (err) {
     next(err);
   }
@@ -378,11 +372,15 @@ export const removeAttachment = async (req, res, next) => {
     if (attachment.user_id !== userId)
       return handleResponse(res, 403, "Not authorized");
 
-    // delete file from S3
+    // delete file from local storage
     try {
-      await deleteFromS3(attachment.path); // path contains S3 key
+      const uploadsDir = path.join(process.cwd(), "src", "uploads");
+      const filePath = path.join(uploadsDir, attachment.path);
+      await import("fs").then((fs) =>
+        fs.promises.unlink(filePath).catch(() => {}),
+      );
     } catch (e) {
-      console.error("Error deleting from S3", attachment.path, e);
+      console.error("Error deleting local file", attachment.path, e);
     }
 
     const deleted = await deleteAttachmentById(id);

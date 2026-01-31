@@ -23,6 +23,12 @@ const port = process.env.PORT || 5001;
 //middleware
 app.use(express.json());
 app.use(cors());
+// Serve uploads as static files
+import path from "path";
+app.use(
+  "/uploads",
+  express.static(path.join(process.cwd(), "backend", "src", "uploads")),
+);
 
 //routes
 app.use("/api/auth", authRoutes);
