@@ -36,6 +36,7 @@ export const createNotesTable = async () => {
     console.log("Notes table created/updated successfully");
   } catch (err) {
     console.error("Error creating/updating notes table:", err);
+    throw err;
   }
 };
 

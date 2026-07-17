@@ -18,6 +18,7 @@ export const createAttachmentsTable = async () => {
     console.log("Attachments table created successfully");
   } catch (err) {
     console.error("Error creating attachments table:", err);
+    throw err;
   }
 };
 

@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import pool from "./config/db.js";
+import path from "path";
 
 import errorHandling from "./middleware/errorHandler.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -13,9 +14,13 @@ import createNotesTable from "./data/createNotesTable.js";
 import createRevokedTokensTable from "./data/createRevokedTokensTable.js";
 import createAttachmentsTable from "./data/createAttachmentsTable.js";
 import createLabelsTable from "./data/createLabelsTable.js";
+import ensureDatabase from "./data/ensureDatabase.js";
 import { createLabelService } from "./models/labelModel.js";
 
-dotenv.config();
+dotenv.config({
+  path: path.resolve(process.cwd(), ".env"),
+  override: true,
+});
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -24,7 +29,6 @@ const port = process.env.PORT || 5001;
 app.use(express.json());
 app.use(cors());
 // Serve uploads as static files
-import path from "path";
 app.use(
   "/uploads",
   express.static(path.join(process.cwd(), "backend", "src", "uploads")),
@@ -38,9 +42,10 @@ app.use("/api/labels", labelRoutes);
 //errorhandling middleware
 app.use(errorHandling);
 
-// Initialize database tables in correct order
+// Initialize database and tables before accepting requests.
 (async () => {
   try {
+    await ensureDatabase();
     //create user table if not exists
     await createUserTable();
     //create notes table if not exists
@@ -54,6 +59,7 @@ app.use(errorHandling);
     console.log("All database tables initialized successfully");
   } catch (error) {
     console.error("Error initializing database tables:", error);
+    process.exitCode = 1;
   }
 })();
 

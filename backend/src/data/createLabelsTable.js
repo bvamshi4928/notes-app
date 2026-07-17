@@ -24,6 +24,7 @@ export const createLabelsTable = async () => {
     console.log("Labels tables created/updated successfully");
   } catch (err) {
     console.error("Error creating labels tables:", err);
+    throw err;
   }
 };
 

@@ -12,6 +12,7 @@ export const createRevokedTokensTable = async () => {
     console.log("Revoked tokens table created successfully");
   } catch (err) {
     console.error("Error creating revoked_tokens table:", err);
+    throw err;
   }
 };
 

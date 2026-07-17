@@ -1,7 +1,12 @@
 import pkg from "pg";
 import dotenv from "dotenv";
+import path from "path";
 const { Pool } = pkg;
-dotenv.config();
+
+dotenv.config({
+  path: path.resolve(process.cwd(), ".env"),
+  override: true,
+});
 
 const pool = new Pool({
   user: process.env.DB_USER,
