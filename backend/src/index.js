@@ -1,8 +1,8 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import pool from "./config/db.js";
 import path from "path";
+import { fileURLToPath } from "url";
 
 import errorHandling from "./middleware/errorHandler.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -15,12 +15,10 @@ import createRevokedTokensTable from "./data/createRevokedTokensTable.js";
 import createAttachmentsTable from "./data/createAttachmentsTable.js";
 import createLabelsTable from "./data/createLabelsTable.js";
 import ensureDatabase from "./data/ensureDatabase.js";
-import { createLabelService } from "./models/labelModel.js";
 
-dotenv.config({
-  path: path.resolve(process.cwd(), ".env"),
-  override: true,
-});
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsDir = path.resolve(__dirname, "uploads");
 
 const app = express();
 const port = process.env.PORT || 5001;
@@ -31,7 +29,7 @@ app.use(cors());
 // Serve uploads as static files
 app.use(
   "/uploads",
-  express.static(path.join(process.cwd(), "backend", "src", "uploads")),
+  express.static(uploadsDir),
 );
 
 //routes
