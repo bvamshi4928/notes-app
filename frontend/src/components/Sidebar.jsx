@@ -24,11 +24,7 @@ const Sidebar = ({ isOpen }) => {
   const [newLabelName, setNewLabelName] = useState("");
   const [editingLabel, setEditingLabel] = useState(null);
 
-  useEffect(() => {
-    fetchLabels();
-  }, []);
-
-  const fetchLabels = async () => {
+  const loadLabels = async () => {
     try {
       const res = await api.get("/labels");
       setLabels(res.data.data || []);
@@ -37,13 +33,23 @@ const Sidebar = ({ isOpen }) => {
     }
   };
 
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      void loadLabels();
+    }, 0);
+
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, []);
+
   const handleCreateLabel = async (e) => {
     e.preventDefault();
     if (!newLabelName.trim()) return;
     try {
       await api.post("/labels", { name: newLabelName });
       setNewLabelName("");
-      fetchLabels();
+      void loadLabels();
     } catch (err) {
       console.error("Error creating label:", err);
     }
@@ -54,7 +60,7 @@ const Sidebar = ({ isOpen }) => {
     try {
       await api.put(`/labels/${labelId}`, { name: newName });
       setEditingLabel(null);
-      fetchLabels();
+      void loadLabels();
     } catch (err) {
       console.error("Error updating label:", err);
     }
@@ -64,7 +70,7 @@ const Sidebar = ({ isOpen }) => {
     if (!window.confirm("Delete this label?")) return;
     try {
       await api.delete(`/labels/${labelId}`);
-      fetchLabels();
+      void loadLabels();
     } catch (err) {
       console.error("Error deleting label:", err);
     }
@@ -80,8 +86,11 @@ const Sidebar = ({ isOpen }) => {
                    ${isOpen ? "w-60" : "w-16 hover:w-60"}
                    flex flex-col`}
       >
-        <ul className="menu p-2 gap-1 flex-shrink-0">
-          {menuItems.map(({ name, path, icon: Icon }) => (
+        <ul className="menu p-2 gap-1 shrink-0">
+          {menuItems.map(({ name, path, icon }) => {
+            const MenuIcon = icon;
+
+            return (
             <li key={name}>
               <NavLink
                 to={path}
@@ -92,7 +101,7 @@ const Sidebar = ({ isOpen }) => {
                    hover:bg-base-200 transition-colors`
                 }
               >
-                <Icon className="text-2xl" />
+                <MenuIcon className="text-2xl" />
                 <span
                   className={`whitespace-nowrap transition-opacity duration-300
                              ${
@@ -105,7 +114,8 @@ const Sidebar = ({ isOpen }) => {
                 </span>
               </NavLink>
             </li>
-          ))}
+            );
+          })}
         </ul>
 
         {/* Labels section */}
