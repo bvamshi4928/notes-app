@@ -475,7 +475,7 @@ const Home = ({ searchTerm, refreshKey, onRefresh, viewMode = "grid" }) => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="select select-bordered select-sm min-w-[140px]"
+              className="select select-bordered select-sm min-w-35"
             >
               <option value="pinned">Pinned First</option>
               <option value="modified">Last Modified</option>
