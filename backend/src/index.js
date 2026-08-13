@@ -1,9 +1,6 @@
 import express from "express";
 import cors from "cors";
 import pool from "./config/db.js";
-import path from "path";
-import { existsSync } from "fs";
-import { fileURLToPath } from "url";
 
 import errorHandling from "./middleware/errorHandler.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -17,12 +14,6 @@ import createAttachmentsTable from "./data/createAttachmentsTable.js";
 import createLabelsTable from "./data/createLabelsTable.js";
 import ensureDatabase from "./data/ensureDatabase.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const uploadsDir = path.resolve(__dirname, "uploads");
-const frontendDistDir = path.resolve(__dirname, "../../frontend/dist");
-const frontendIndexFile = path.join(frontendDistDir, "index.html");
-
 const app = express();
 const port = process.env.PORT || 5001;
 
@@ -31,11 +22,6 @@ const port = process.env.PORT || 5001;
 //middleware
 app.use(express.json());
 app.use(cors());
-// Serve uploads as static files
-app.use(
-  "/uploads",
-  express.static(uploadsDir),
-);
 
 //routes
 app.use("/api/auth", authRoutes);
@@ -68,18 +54,6 @@ app.get("/api/health/db", async (req, res) => {
   const result = await pool.query("SELECT current_database()");
   res.send(`the database name is ${result.rows[0].current_database}`);
 });
-
-// Serve built frontend from backend in single-server mode.
-if (existsSync(frontendIndexFile)) {
-  app.use(express.static(frontendDistDir));
-  app.get(/^(?!\/api|\/uploads).*/, (req, res) => {
-    res.sendFile(frontendIndexFile);
-  });
-} else {
-  app.get("/", (req, res) => {
-    res.send("Frontend build not found. Build frontend with: npm run build");
-  });
-}
 
 //errorhandling middleware
 app.use(errorHandling);
